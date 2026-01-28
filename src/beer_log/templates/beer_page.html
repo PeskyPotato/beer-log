@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Beer - {{ beer.name }}{% endblock %}
+{% block content %}
+<main>
+    <h1>{{ beer.name }} by <a href="/beer/{{ brewery.slug }}/">{{ brewery.name }}</a></h1>
+
+    {% if latest_checkin %}
+    <table>
+        <tr>
+            <th>Beer</th>
+            <td>{{ latest_checkin.beer_name }}</td>
+        </tr>
+        <tr>
+            <th>Brewery</th>
+            <td><a href="/beer/{{ brewery.slug }}/">{{ latest_checkin.brewery_name }}</a></td>
+        </tr>
+        <tr>
+            <th>Rating</th>
+            <td>{{ latest_checkin.rating_score }}/5</td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <div class="segment">
+        <h3 class="segment-title">Check-ins</h3>
+        {% for checkin in checkins %}
+            <article class="post">
+                <div class="post-text">
+                    <div class="post-info">
+                        <time datetime="{{ checkin.timestamp | date('%Y-%m-%dT%H:%M:%S.%f%z') }}">{{ checkin.timestamp | date("%Y-%m-%d") }}</time>
+                        - Rated: {{ checkin.rating_score }}/5
+                    </div>
+                    <div class="post-blurb">
+                        {{ checkin.description | safe }}
+                        <a href="/beer/{{ brewery.slug }}/{{ beer.slug }}/{{ checkin.checkin_id }}/">View check-in</a>
+                    </div>
+                </div>
+           </article>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

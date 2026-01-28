@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<link rel="alternate" type="application/rss+xml" href="https://pesky.moe/beer/index.xml" title="Pesky's beer check-ins">
+{% endblock %}
+{% block title %}Brewery - {{ brewery.name }}{% endblock %}
+{% block content %}
+<main>
+    <h1>{{ brewery.name }}</h1>
+    <div class="segment">
+        <h2 class="segment-title">Beers</h2>
+        <ul>
+            {% for beer in beers %}
+            <li>
+                <a href="/beer/{{ brewery.slug }}/{{ beer.slug }}/">{{ beer.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</main>
+{% endblock %}

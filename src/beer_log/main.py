@@ -1,6 +1,4 @@
-from  jinja2 import Environment, FileSystemLoader
 import html2text
-from datetime import datetime
 import os
 import markdown
 import re
@@ -141,7 +139,6 @@ def render_beers():
 
 def render_checkins():
     checkins = db.get_checkins()
-    print(checkins)
 
     # /beer/ page with all check-ins
     checkins_with_slugs = []

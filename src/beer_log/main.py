@@ -4,36 +4,16 @@ from datetime import datetime
 import os
 import markdown
 import re
+from .template_environment import TemplateEnvironment
 
 from beer_log.beer import Database
 
 root = os.path.dirname(os.path.abspath(__file__))
-templates_dir = os.path.join(root, 'templates')
-env = Environment(loader=FileSystemLoader(templates_dir))
-env.lstrip_blocks = True
-env.trim_blocks = True
+template_environment = None
 
 db = Database(os.path.join(os.getcwd(), "beer.db"))
 
 content_dir = "content/beer"
-
-def from_timestamp(timestamp, fmt="iso"):
-    published_dt = datetime.fromtimestamp(timestamp)
-    if fmt == "human":
-        return published_dt.strftime("%d.%m.%Y")
-
-    return published_dt.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
-
-
-env.filters["from_timestamp"] = from_timestamp
-
-
-def date_format(value, fmt="%Y-%m-%d"):
-    dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-    return dt.strftime(fmt)
-
-
-env.filters["date"] = date_format
 
 text_maker = html2text.HTML2Text()
 text_maker.ignore_links = True
@@ -57,7 +37,10 @@ def parse_checkin_file(file_path):
         }
         return checkin_data
 
-def process_checkins(content_dir=content_dir):
+def process_checkins(content_dir=content_dir, templates_dir=os.path.join(root,"templates")):
+    global template_environment
+    template_environment = TemplateEnvironment(templates_dir)
+
     if not os.path.exists(content_dir):
         print(f"Content path {os.path.abspath(content_dir)} does not exist")
         return False
@@ -95,7 +78,7 @@ def process_checkins(content_dir=content_dir):
 
 
 def render_pages(template_page, folder_name, page_name='index.html', **kwargs,):
-    template = env.get_template(template_page)
+    template = template_environment.env.get_template(template_page)
     filename = os.path.join(root, 'html', folder_name, page_name)
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, 'w') as fh:

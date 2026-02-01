@@ -1,4 +1,8 @@
 import argparse
+import os
+import sys
+import subprocess
+from datetime import datetime
 from .main import process_checkins
 
 
@@ -10,6 +14,33 @@ def handle_process_checkins(args):
         kwargs['content_dir'] = args.content_dir
     
     process_checkins(**kwargs)
+
+def handle_checkin(args):
+    content__dir = os.path.join("./", "content", "beer")
+    if args.content_dir:
+        content__dir = args.content_dir
+
+    if args.timestamp:
+        timestamp = datetime.fromisoformat(args.timestamp)
+    else:
+        timestamp = datetime.now()
+
+    filename = f"{timestamp.strftime('%Y-%m-%d-%H')}-{args.brewery.lower()}-{args.beer.lower()}.md"
+    filepath = os.path.join(content__dir, filename)
+    with open(filepath, "w") as f:
+        f.write(f"""---
+beer_name: {args.beer}
+beer_style:
+brewery_name: {args.brewery}
+created_at: {str(timestamp)}
+beer_score:
+serving_style:
+image:
+---
+
+""")
+    # TODO: Open file after creating boilerplate.
+    
 
 def entry():
     parser = argparse.ArgumentParser()
@@ -25,6 +56,25 @@ def entry():
         help="Location of content to replace the default ./content/beer"
     )
     process_checkins_parser.set_defaults(func=handle_process_checkins)
+
+    checkin_parser = subparser.add_parser("checkin")
+    checkin_parser.add_argument(
+        "brewery",
+        help="Name of the brewery that made the beer."
+    )
+    checkin_parser.add_argument(
+        "beer",
+        help="Name of the beer."
+    )
+    checkin_parser.add_argument(
+        "--content_dir",
+        help="Location of content to replace the default ./content/beer"
+    )
+    checkin_parser.add_argument(
+        "--timestamp",
+        help=""
+    )
+    checkin_parser.set_defaults(func=handle_checkin)
 
     args = parser.parse_args()
     args.func(args)

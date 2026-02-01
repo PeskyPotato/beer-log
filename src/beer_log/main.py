@@ -73,13 +73,22 @@ def process_checkins(content_dir=content_dir, templates_dir=os.path.join(root,"t
                 checkin_data['description'],
                 checkin_data['image']
             )
-
+    # TODO: Configurable prefix through output path.
+    # All pages are prefixed with /beer/ as they are saved in
+    # a new folder called beer. Allow user to configure they output
+    # path and adjust prefix accordingly. Maybe it might be useful
+    # to keep these two elements separate?
     render_checkins()
     render_beers()
     render_breweries()
 
 
 def render_pages(template_page, folder_name, page_name='index.html', **kwargs,):
+    # TODO: Better default pages.
+    # Default pages are currently just stripped from my custom template
+    # without CSS. Create better defaults that work with HTML elements
+    # and none or minimal styles.
+
     template = template_environment.env.get_template(template_page)
     filename = os.path.join(root, 'html', folder_name, page_name)
     os.makedirs(os.path.dirname(filename), exist_ok=True)

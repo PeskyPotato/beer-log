@@ -43,6 +43,11 @@ image:
     
 
 def entry():
+    # TODO: Redo argument syntax to have namespaces by entity then action.
+    # Create namespaces by entity, followed by actions, then required
+    # or optionals arguments. For example `beer-log checkin process` or
+    # `beer-log brewery add --name "Oproer"`.
+
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers(dest="command", required=True)
 

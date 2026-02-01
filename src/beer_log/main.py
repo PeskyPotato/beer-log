@@ -24,10 +24,14 @@ def parse_checkin_file(file_path):
         md = markdown.Markdown(extensions=['meta'])
         html = md.convert(content)
         meta = md.Meta
+        
+        beer_score
+        if meta.get('beer_score') == '':
+            beer_score = -1
 
         checkin_data = {
             'timestamp': meta.get('created_at', [None])[0],
-            'rating_score': float(meta.get('beer_score', [-1])[0]),
+            'rating_score': beer_score,
             'beer_name': meta.get('beer_name', [None])[0],
             'brewery_name': meta.get('brewery_name', [None])[0],
             'description': html,

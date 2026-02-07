@@ -3,6 +3,7 @@ import os
 import markdown
 import re
 from .template_environment import TemplateEnvironment
+from pathlib import Path
 
 from beer_log.beer import Database
 
@@ -11,7 +12,13 @@ template_environment = None
 
 db = Database(os.path.join(os.getcwd(), "beer.db"))
 
-content_dir = "content/beer"
+# TODO: Create Config class.
+# Config such as prefix, output_dir, templat_dir are
+# used across multiple functions and the imported library
+# and CLI by users. Combining all configuration into a single
+# class including validation can be used by both entry points.
+
+set_prefix = None
 
 text_maker = html2text.HTML2Text()
 text_maker.ignore_links = True
@@ -24,8 +31,8 @@ def parse_checkin_file(file_path):
         md = markdown.Markdown(extensions=['meta'])
         html = md.convert(content)
         meta = md.Meta
-        
-        beer_score
+
+        beer_score = -1
         if meta.get('beer_score') == '':
             beer_score = -1
 
@@ -39,9 +46,30 @@ def parse_checkin_file(file_path):
         }
         return checkin_data
 
-def process_checkins(content_dir=content_dir, templates_dir=os.path.join(root,"templates")):
+
+def clean_path(path):
+    cwd = os.getcwd()
+
+    path = Path(path)
+    if path.is_absolute():
+        return path.resolve()
+
+    return os.path.join(cwd, path)
+
+
+def process_checkins(
+        content_dir="content/beer",
+        templates_dir=os.path.join(root, "templates"),
+        output_dir=os.path.join(os.getcwd(), "beer"),
+        prefix=None
+        ):
+    output_dir = clean_path(output_dir)
+
     global template_environment
     template_environment = TemplateEnvironment(templates_dir)
+
+    global set_prefix
+    set_prefix = prefix
 
     if not os.path.exists(content_dir):
         print(f"Content path {os.path.abspath(content_dir)} does not exist")
@@ -73,14 +101,9 @@ def process_checkins(content_dir=content_dir, templates_dir=os.path.join(root,"t
                 checkin_data['description'],
                 checkin_data['image']
             )
-    # TODO: Configurable prefix through output path.
-    # All pages are prefixed with /beer/ as they are saved in
-    # a new folder called beer. Allow user to configure they output
-    # path and adjust prefix accordingly. Maybe it might be useful
-    # to keep these two elements separate?
-    render_checkins()
-    render_beers()
-    render_breweries()
+    render_checkins(output_dir)
+    render_beers(output_dir)
+    render_breweries(output_dir)
 
 
 def render_pages(template_page, folder_name, page_name='index.html', **kwargs,):
@@ -89,15 +112,18 @@ def render_pages(template_page, folder_name, page_name='index.html', **kwargs,):
     # without CSS. Create better defaults that work with HTML elements
     # and none or minimal styles.
 
+    global set_prefix
+
     template = template_environment.env.get_template(template_page)
-    filename = os.path.join(root, 'html', folder_name, page_name)
+    filename = os.path.join(folder_name, page_name)
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, 'w') as fh:
         fh.write(template.render(
-            **kwargs
+            **kwargs, prefix=set_prefix
         ))
 
-def render_breweries():
+
+def render_breweries(output_dir):
     # /beer/<brewery/ shows all beers checked-in from a brewery
     breweries = db.get_breweries()
     for brewery_row in breweries:
@@ -114,13 +140,14 @@ def render_breweries():
 
         render_pages(
             'brewery_page.html',
-            os.path.join(os.getcwd(), 'beer', brewery_dict['slug']),
+            os.path.join(output_dir, brewery_dict['slug']),
             'index.html',
             brewery=brewery_dict,
             beers=brewery_beers_with_slugs
         )
 
-def render_beers():
+
+def render_beers(output_dir):
     # /beer/<brewery>/<beer>/ shows all checkins for a beer
     beers = db.get_beers()
     for beer_row in beers:
@@ -140,7 +167,7 @@ def render_beers():
         render_pages(
             'beer_page.html',
             os.path.join(
-                os.getcwd(), 'beer', brewery_dict['slug'],
+                output_dir, brewery_dict['slug'],
                 beer_dict['slug']
             ),
             'index.html',
@@ -150,9 +177,10 @@ def render_beers():
             latest_checkin=latest_checkin
         )
 
-def render_checkins():
-    checkins = db.get_checkins()
 
+def render_checkins(output_dir):
+    checkins = db.get_checkins()
+    print(output_dir)
     # /beer/ page with all check-ins
     checkins_with_slugs = []
     for checkin in checkins:
@@ -164,7 +192,7 @@ def render_checkins():
         render_pages(
             'checkin_page.html',
             os.path.join(
-                os.getcwd(), 'beer',
+                output_dir,
                 str(checkin_dict['brewery_slug']),
                 str(checkin_dict['beer_slug']),
                 str(checkin['checkin_id'])
@@ -173,7 +201,7 @@ def render_checkins():
             checkin=checkin_dict
         )
     render_pages(
-        'beer.html', os.path.join(os.getcwd(), 'beer'),
+        'beer.html', output_dir,
         'index.html', checkins=checkins_with_slugs
     )
 

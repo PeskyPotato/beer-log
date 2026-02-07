@@ -14,11 +14,11 @@
                 <table>
                     <tr>
                         <th>Beer</th>
-                        <td><a href="/beer/{{ checkin.brewery_slug }}/{{ checkin.beer_slug }}/">{{ checkin.beer_name }}</a></td>
+                        <td><a href="{{ prefix }}/{{ checkin.brewery_slug }}/{{ checkin.beer_slug }}/">{{ checkin.beer_name }}</a></td>
                     </tr>
                     <tr>
                         <th>Brewery</th>
-                        <td><a href="/beer/{{ checkin.brewery_slug }}/">{{ checkin.brewery_name }}</a></td>
+                        <td><a href="{{ prefix }}/{{ checkin.brewery_slug }}/">{{ checkin.brewery_name }}</a></td>
                     </tr>
                     <tr>
                         <th>Rating</th>

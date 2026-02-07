@@ -10,13 +10,13 @@
             <article class="post">
                 <div class="post-text">
                     <div class="post-info">
-                        <a href="/beer/{{ checkin.brewery_slug }}/{{ checkin.beer_slug }}/" class="post-info-title">{{ checkin.beer_name }}</a> by <a href="/beer/{{ checkin.brewery_slug }}/">{{ checkin.brewery_name }}</a>
+                        <a href="{{ prefix }}/{{ checkin.brewery_slug }}/{{ checkin.beer_slug }}/" class="post-info-title">{{ checkin.beer_name }}</a> by <a href="{{ prefix }}/{{ checkin.brewery_slug }}/">{{ checkin.brewery_name }}</a>
                         <time datetime="{{ checkin.timestamp | date('%Y-%m-%dT%H:%M:%S.%f%z') }}">{{ checkin.timestamp | date("%Y-%m-%d") }}</time>
                         - Rated: {{ checkin.rating_score }}/5
                     </div>
                     <div class="post-blurb">
                         {{ checkin.description | safe }}
-                        <a href="/beer/{{ checkin.slug }}/">View check-in</a>
+                        <a href="{{ prefix }}/{{ checkin.slug }}/">View check-in</a>
                     </div>
                 </div>
            </article>

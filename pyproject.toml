@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "html2text>=2025.4.15",
     "jinja2>=3.1.6",
+    "rss-py @ git+https://github.com/PeskyPotato/rss_py.git@main",
 ]
 
 [project.scripts]
@@ -18,3 +19,6 @@ beer-log = "beer_log:entry"
 [build-system]
 requires = ["uv_build>=0.9.8,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+rss-py = { git = "https://github.com/PeskyPotato/rss_py.git", rev = "main" }

@@ -2,9 +2,17 @@ import html2text
 import os
 import re
 from .template_environment import TemplateEnvironment
-from .utils import clean_path, parse_checkin_file
+from .utils import clean_path, parse_checkin_file, to_datetime
 
 from beer_log.beer import Database
+import rss_py
+
+# TODO: Cleanup global variables and include in the BeerLog class.
+# db, root, and template_enviornment can all be created within BeerLog.
+
+# TODO: Create a add_checkin() function to create new beer checkins.
+
+# TODO: Allow users to enable/disable RSS generation.
 
 root = os.path.dirname(os.path.abspath(__file__))
 template_environment = None
@@ -24,7 +32,8 @@ class BeerLog():
             content_dir="content/beer",
             templates_dir=os.path.join(root, "templates"),
             output_dir=os.path.join(os.getcwd(), "beer"),
-            prefix=None
+            prefix=None,
+            base_url=None,
             ):
 
         self.output_dir = clean_path(output_dir)
@@ -34,6 +43,10 @@ class BeerLog():
         self.prefix = prefix
         if prefix is None:
             self.prefix = ""
+
+        self.base_url = base_url
+        if base_url is None:
+            self.base_url="http://localhost:8000/"
 
         if not os.path.exists(content_dir):
             print(f"Content path {os.path.abspath(content_dir)} does not exist")
@@ -150,6 +163,7 @@ class BeerLog():
         print(self.output_dir)
         # /beer/ page with all check-ins
         checkins_with_slugs = []
+        rss_items = []
         for checkin in checkins:
             checkin_dict = dict(checkin)
             checkin_dict['beer_slug'] = re.sub(r'\W+', '-', checkin['beer_name']).strip('-').lower()
@@ -167,9 +181,26 @@ class BeerLog():
                 'index.html',
                 checkin=checkin_dict
             )
+            rss_items.append(rss_py.Item(
+                title=f"{checkin_dict['brewery_name']} - {checkin_dict['beer_name']}",
+                pubDate=to_datetime(checkin_dict['timestamp']),
+                link=f"{self.base_url}{checkin_dict['slug']}"
+            ))
         self.render_pages(
             'beer.html', self.output_dir,
             'index.html', checkins=checkins_with_slugs
         )
+
+        feed = rss_py.Channel(
+            title="My beer log",
+            description="Recent beer I've drunk.",
+            link=self.base_url,
+            items=rss_items
+        )
+        rss_feed = rss_py.build(feed)
+        with open(
+            os.path.join(self.output_dir, "index.xml"),
+            'w') as fh:
+            fh.write(rss_feed)
 
         return True

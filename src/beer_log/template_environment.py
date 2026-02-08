@@ -31,6 +31,9 @@ class TemplateEnvironment:
 
 
     def date_format(self, value, fmt="%Y-%m-%d"):
-        dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        try:
+            dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S.%f %z")
+        except ValueError:
+            dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         return dt.strftime(fmt)
 

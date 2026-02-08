@@ -1,6 +1,7 @@
 import os
 import markdown
 from pathlib import Path
+from datetime import datetime, timezone
 
 
 def clean_path(path):
@@ -33,3 +34,13 @@ def parse_checkin_file(file_path):
             'image': meta.get('image', [None])[0]
         }
         return checkin_data
+
+
+def to_datetime(value):
+    try:
+        dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S.%f %z")
+    except ValueError:
+        dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+

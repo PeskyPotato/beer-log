@@ -1,9 +1,8 @@
 import html2text
 import os
-import markdown
 import re
 from .template_environment import TemplateEnvironment
-from pathlib import Path
+from .utils import clean_path, parse_checkin_file
 
 from beer_log.beer import Database
 
@@ -12,197 +11,165 @@ template_environment = None
 
 db = Database(os.path.join(os.getcwd(), "beer.db"))
 
-# TODO: Create Config class.
-# Config such as prefix, output_dir, templat_dir are
-# used across multiple functions and the imported library
-# and CLI by users. Combining all configuration into a single
-# class including validation can be used by both entry points.
-
-set_prefix = None
-
 text_maker = html2text.HTML2Text()
 text_maker.ignore_links = True
 text_maker.bypass_tables = True
 text_maker.ignore_images = True
 
-def parse_checkin_file(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-        md = markdown.Markdown(extensions=['meta'])
-        html = md.convert(content)
-        meta = md.Meta
 
-        beer_score = -1
-        if meta.get('beer_score') == '':
-            beer_score = -1
+class BeerLog():
 
-        checkin_data = {
-            'timestamp': meta.get('created_at', [None])[0],
-            'rating_score': beer_score,
-            'beer_name': meta.get('beer_name', [None])[0],
-            'brewery_name': meta.get('brewery_name', [None])[0],
-            'description': html,
-            'image': meta.get('image', [None])[0]
-        }
-        return checkin_data
+    def __init__(
+            self,
+            content_dir="content/beer",
+            templates_dir=os.path.join(root, "templates"),
+            output_dir=os.path.join(os.getcwd(), "beer"),
+            prefix=None
+            ):
 
+        self.output_dir = clean_path(output_dir)
 
-def clean_path(path):
-    cwd = os.getcwd()
+        self.template_environment = TemplateEnvironment(templates_dir)
 
-    path = Path(path)
-    if path.is_absolute():
-        return path.resolve()
+        self.prefix = prefix
+        if prefix is None:
+            self.prefix = ""
 
-    return os.path.join(cwd, path)
+        if not os.path.exists(content_dir):
+            print(f"Content path {os.path.abspath(content_dir)} does not exist")
+            return False
+        self.content_dir = content_dir
 
+    def process_checkins(self):
+        for filename in os.listdir(self.content_dir):
+            if filename.endswith(".md") and filename != "index.md":
+                file_path = os.path.join(self.content_dir, filename)
+                checkin_data = parse_checkin_file(file_path)
+                checkin_id = os.path.splitext(filename)[0]
 
-def process_checkins(
-        content_dir="content/beer",
-        templates_dir=os.path.join(root, "templates"),
-        output_dir=os.path.join(os.getcwd(), "beer"),
-        prefix=None
-        ):
-    output_dir = clean_path(output_dir)
+                if not all(
+                    [checkin_data['beer_name'],
+                     checkin_data['brewery_name'],
+                     checkin_data['timestamp']]
+                        ):
+                    print(f"Skipping {filename} due to missing data.")
+                    continue
 
-    global template_environment
-    template_environment = TemplateEnvironment(templates_dir)
+                brewery_id = db.create_brewery_if_not_exists(
+                    checkin_data["brewery_name"]
+                )
 
-    global set_prefix
-    set_prefix = prefix
+                beer_id = db.create_beer_if_not_exists(
+                    checkin_data["beer_name"],
+                    brewery_id
+                )
 
-    if not os.path.exists(content_dir):
-        print(f"Content path {os.path.abspath(content_dir)} does not exist")
-        return False
+                db.create_checkin(
+                    checkin_id, beer_id,
+                    checkin_data['rating_score'],
+                    checkin_data['timestamp'],
+                    checkin_data['description'],
+                    checkin_data['image']
+                )
+        self.render_checkins()
+        self.render_beers()
+        self.render_breweries()
 
-    for filename in os.listdir(content_dir):
-        if filename.endswith(".md") and filename != "index.md":
-            file_path = os.path.join(content_dir, filename)
-            checkin_data = parse_checkin_file(file_path)
-            checkin_id = os.path.splitext(filename)[0]
+    def render_pages(
+            self, template_page,
+            folder_name, page_name='index.html',
+            **kwargs):
+        # TODO: Better default pages.
+        # Default pages are currently just stripped from my custom template
+        # without CSS. Create better defaults that work with HTML elements
+        # and none or minimal styles.
 
-            if not all([checkin_data['beer_name'], checkin_data['brewery_name'], checkin_data['timestamp']]):
-                print(f"Skipping {filename} due to missing data.")
-                continue
+        template = self.template_environment.env.get_template(template_page)
+        filename = os.path.join(folder_name, page_name)
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, 'w') as fh:
+            fh.write(template.render(
+                **kwargs, prefix=self.prefix
+            ))
 
-            brewery_id = db.create_brewery_if_not_exists(
-                checkin_data["brewery_name"]
+    def render_breweries(self):
+        # /beer/<brewery/ shows all beers checked-in from a brewery
+        breweries = db.get_breweries()
+        for brewery_row in breweries:
+            brewery_dict = dict(brewery_row)
+            brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
+
+            brewery_beers = db.get_beers_for_brewery(brewery_dict['id'])
+
+            brewery_beers_with_slugs = []
+            for beer_row in brewery_beers:
+                beer_dict = dict(beer_row)
+                beer_dict['slug'] = re.sub(r'\W+', '-', beer_dict['name']).strip('-').lower()
+                brewery_beers_with_slugs.append(beer_dict)
+
+            self.render_pages(
+                'brewery_page.html',
+                os.path.join(self.output_dir, brewery_dict['slug']),
+                'index.html',
+                brewery=brewery_dict,
+                beers=brewery_beers_with_slugs
             )
 
-            beer_id = db.create_beer_if_not_exists(
-                checkin_data["beer_name"],
-                brewery_id
-            ) 
-
-            db.create_checkin(
-                checkin_id, beer_id,
-                checkin_data['rating_score'],
-                checkin_data['timestamp'],
-                checkin_data['description'],
-                checkin_data['image']
-            )
-    render_checkins(output_dir)
-    render_beers(output_dir)
-    render_breweries(output_dir)
-
-
-def render_pages(template_page, folder_name, page_name='index.html', **kwargs,):
-    # TODO: Better default pages.
-    # Default pages are currently just stripped from my custom template
-    # without CSS. Create better defaults that work with HTML elements
-    # and none or minimal styles.
-
-    global set_prefix
-
-    template = template_environment.env.get_template(template_page)
-    filename = os.path.join(folder_name, page_name)
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    with open(filename, 'w') as fh:
-        fh.write(template.render(
-            **kwargs, prefix=set_prefix
-        ))
-
-
-def render_breweries(output_dir):
-    # /beer/<brewery/ shows all beers checked-in from a brewery
-    breweries = db.get_breweries()
-    for brewery_row in breweries:
-        brewery_dict = dict(brewery_row)
-        brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
-
-        brewery_beers = db.get_beers_for_brewery(brewery_dict['id'])
-        
-        brewery_beers_with_slugs = []
-        for beer_row in brewery_beers:
+    def render_beers(self):
+        # /beer/<brewery>/<beer>/ shows all checkins for a beer
+        beers = db.get_beers()
+        for beer_row in beers:
             beer_dict = dict(beer_row)
+            brewery = db.get_brewery(beer_dict['brewery_id'])
+            brewery_dict = dict(brewery)
+            brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
+
+            beer_checkins = db.get_checkins_for_beer(beer_dict['id'])
+
             beer_dict['slug'] = re.sub(r'\W+', '-', beer_dict['name']).strip('-').lower()
-            brewery_beers_with_slugs.append(beer_dict)
 
-        render_pages(
-            'brewery_page.html',
-            os.path.join(output_dir, brewery_dict['slug']),
-            'index.html',
-            brewery=brewery_dict,
-            beers=brewery_beers_with_slugs
+            latest_checkin = None
+            if beer_checkins:
+                latest_checkin = beer_checkins[0]
+
+            self.render_pages(
+                'beer_page.html',
+                os.path.join(
+                    self.output_dir, brewery_dict['slug'],
+                    beer_dict['slug']
+                ),
+                'index.html',
+                beer=beer_dict,
+                brewery=brewery_dict,
+                checkins=beer_checkins,
+                latest_checkin=latest_checkin
+            )
+
+    def render_checkins(self):
+        checkins = db.get_checkins()
+        print(self.output_dir)
+        # /beer/ page with all check-ins
+        checkins_with_slugs = []
+        for checkin in checkins:
+            checkin_dict = dict(checkin)
+            checkin_dict['beer_slug'] = re.sub(r'\W+', '-', checkin['beer_name']).strip('-').lower()
+            checkin_dict['brewery_slug'] = re.sub(r'\W+', '-', checkin['brewery_name']).strip('-').lower()
+            checkin_dict['slug'] = f"{checkin_dict['brewery_slug']}/{checkin_dict['beer_slug']}/{checkin_dict['checkin_id']}"
+            checkins_with_slugs.append(checkin_dict)
+            self.render_pages(
+                'checkin_page.html',
+                os.path.join(
+                    self.output_dir,
+                    str(checkin_dict['brewery_slug']),
+                    str(checkin_dict['beer_slug']),
+                    str(checkin['checkin_id'])
+                ),
+                'index.html',
+                checkin=checkin_dict
+            )
+        self.render_pages(
+            'beer.html', self.output_dir,
+            'index.html', checkins=checkins_with_slugs
         )
 
-
-def render_beers(output_dir):
-    # /beer/<brewery>/<beer>/ shows all checkins for a beer
-    beers = db.get_beers()
-    for beer_row in beers:
-        beer_dict = dict(beer_row)
-        brewery = db.get_brewery(beer_dict['brewery_id'])
-        brewery_dict = dict(brewery)
-        brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
-
-        beer_checkins = db.get_checkins_for_beer(beer_dict['id'])
-
-        beer_dict['slug'] = re.sub(r'\W+', '-', beer_dict['name']).strip('-').lower()
-        
-        latest_checkin = None
-        if beer_checkins:
-            latest_checkin = beer_checkins[0]
-
-        render_pages(
-            'beer_page.html',
-            os.path.join(
-                output_dir, brewery_dict['slug'],
-                beer_dict['slug']
-            ),
-            'index.html',
-            beer=beer_dict,
-            brewery=brewery_dict,
-            checkins=beer_checkins,
-            latest_checkin=latest_checkin
-        )
-
-
-def render_checkins(output_dir):
-    checkins = db.get_checkins()
-    print(output_dir)
-    # /beer/ page with all check-ins
-    checkins_with_slugs = []
-    for checkin in checkins:
-        checkin_dict = dict(checkin)
-        checkin_dict['beer_slug'] = re.sub(r'\W+', '-', checkin['beer_name']).strip('-').lower()
-        checkin_dict['brewery_slug'] = re.sub(r'\W+', '-', checkin['brewery_name']).strip('-').lower()
-        checkin_dict['slug'] = f"{checkin_dict['brewery_slug']}/{checkin_dict['beer_slug']}/{checkin_dict['checkin_id']}"
-        checkins_with_slugs.append(checkin_dict)
-        render_pages(
-            'checkin_page.html',
-            os.path.join(
-                output_dir,
-                str(checkin_dict['brewery_slug']),
-                str(checkin_dict['beer_slug']),
-                str(checkin['checkin_id'])
-            ),
-            'index.html',
-            checkin=checkin_dict
-        )
-    render_pages(
-        'beer.html', output_dir,
-        'index.html', checkins=checkins_with_slugs
-    )
-
-    return True
+        return True

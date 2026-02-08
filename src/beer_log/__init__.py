@@ -1,9 +1,7 @@
 import argparse
 import os
-import sys
-import subprocess
 from datetime import datetime
-from .main import process_checkins
+from .main import BeerLog
 
 
 def handle_process_checkins(args):
@@ -12,8 +10,12 @@ def handle_process_checkins(args):
         kwargs['templates_dir'] = args.templates_dir
     if args.content_dir is not None:
         kwargs['content_dir'] = args.content_dir
-    
-    process_checkins(**kwargs)
+    if args.output_dir is not None:
+        kwargs['output_dir'] = args.output_dir
+
+    bl = BeerLog(**kwargs)
+    bl.process_checkins()
+
 
 def handle_checkin(args):
     content__dir = os.path.join("./", "content", "beer")
@@ -60,6 +62,10 @@ def entry():
         "--content_dir",
         help="Location of content to replace the default ./content/beer"
     )
+    process_checkins_parser.add_argument(
+        "--output_dir",
+        help="Location of rendered HTML files to replace the default ./beer"
+    )
     process_checkins_parser.set_defaults(func=handle_process_checkins)
 
     checkin_parser = subparser.add_parser("checkin")
@@ -83,4 +89,3 @@ def entry():
 
     args = parser.parse_args()
     args.func(args)
-

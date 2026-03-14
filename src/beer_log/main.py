@@ -184,7 +184,7 @@ class BeerLog():
             rss_items.append(rss_py.Item(
                 title=f"{checkin_dict['brewery_name']} - {checkin_dict['beer_name']}",
                 pubDate=to_datetime(checkin_dict['timestamp']),
-                link=f"{self.base_url}{checkin_dict['slug']}"
+                link=f"{self.base_url}{self.prefix}/{checkin_dict['slug']}"
             ))
         self.render_pages(
             'beer.html', self.output_dir,
@@ -194,7 +194,7 @@ class BeerLog():
         feed = rss_py.Channel(
             title="My beer log",
             description="Recent beer I've drunk.",
-            link=self.base_url,
+            link=f"{self.base_url}{self.prefix}/" ,
             items=rss_items
         )
         rss_feed = rss_py.build(feed)

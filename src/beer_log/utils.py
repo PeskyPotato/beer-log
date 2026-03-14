@@ -21,13 +21,13 @@ def parse_checkin_file(file_path):
         html = md.convert(content)
         meta = md.Meta
 
-        beer_score = -1
+        # TODO: Can we simplify the arrays here?
+        beer_score = meta.get('beer_score', -1)
         if meta.get('beer_score') == '':
-            beer_score = -1
-
+            beer_score = [-1]
         checkin_data = {
             'timestamp': meta.get('created_at', [None])[0],
-            'rating_score': beer_score,
+            'rating_score': beer_score[0],
             'beer_name': meta.get('beer_name', [None])[0],
             'brewery_name': meta.get('brewery_name', [None])[0],
             'description': html,

@@ -2,7 +2,11 @@ import html2text
 import os
 import re
 from .template_environment import TemplateEnvironment
-from .utils import clean_path, parse_checkin_file, to_datetime
+from datetime import datetime
+from .utils import (
+    clean_path, parse_checkin_file, to_datetime,
+    clean_filenames
+)
 
 from beer_log.beer import Database
 import rss_py
@@ -10,9 +14,9 @@ import rss_py
 # TODO: Cleanup global variables and include in the BeerLog class.
 # db, root, and template_enviornment can all be created within BeerLog.
 
-# TODO: Create a add_checkin() function to create new beer checkins.
-
 # TODO: Allow users to enable/disable RSS generation.
+
+# TODO: Docs. Update README to include checkin add.
 
 root = os.path.dirname(os.path.abspath(__file__))
 template_environment = None
@@ -23,6 +27,49 @@ text_maker = html2text.HTML2Text()
 text_maker.ignore_links = True
 text_maker.bypass_tables = True
 text_maker.ignore_images = True
+
+
+class Checkin():
+
+    def __init__(
+            self,
+            beer_name,
+            brewery_name,
+            content_dir,
+            ):
+        self.brewery_name = brewery_name
+        self.beer_name = beer_name
+        self.content_dir = content_dir
+
+        if not os.path.exists(content_dir):
+            print(f"Creating content path {os.path.abspath(content_dir)}.")
+            os.makedirs(self.content_dir)
+
+    def add_checkin(self):
+        print(self.beer_name, self.brewery_name)
+        timestamp = datetime.now()
+        filename = f"{timestamp.strftime('%Y-%m-%d-%H')}-{clean_filenames(self.brewery_name)}-{clean_filenames(self.beer_name)}.md"
+        filepath = os.path.join(self.content_dir, filename)
+        with open(filepath, "w") as f:
+            f.write(f"""---
+beer_name: {self.beer_name}
+beer_style:
+brewery_name: {self.brewery_name}
+created_at: {str(timestamp)}
+beer_score:
+serving_style:
+image:
+---
+
+""")
+        filepath = os.path.abspath(filepath)
+        from shlex import quote
+        if os.sys.platform == "win32":
+            os.system(f"notepad.exe '{filepath}'")
+        else:
+            os.system(
+                f"{os.getenv('EDITOR', 'vi')} {quote(filepath)}"
+            )
 
 
 class BeerLog():

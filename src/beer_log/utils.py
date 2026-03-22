@@ -44,3 +44,9 @@ def to_datetime(value):
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
 
+
+def clean_filenames(value):
+    # Used to escape some characters in filenames
+    # Converts string to lowercase, replaces spaces with
+    # a hyphen.
+    return value.lower().replace(' ', '-')

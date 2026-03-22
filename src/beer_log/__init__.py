@@ -1,34 +1,18 @@
 import argparse
-import os
-from datetime import datetime
-from .main import BeerLog
+from .main import BeerLog, Checkin
 
 
-def handle_checkin(args):
-    content__dir = os.path.join("./", "content", "beer")
-    if args.content_dir:
-        content__dir = args.content_dir
+def handle_checkin_add(args):
+    kwargs = {}
+    if args.brewery is not None:
+        kwargs['brewery_name'] = args.brewery
+    if args.beer is not None:
+        kwargs['beer_name'] = args.beer
+    if args.content_dir is not None:
+        kwargs['content_dir'] = args.content_dir
 
-    if args.timestamp:
-        timestamp = datetime.fromisoformat(args.timestamp)
-    else:
-        timestamp = datetime.now()
-
-    filename = f"{timestamp.strftime('%Y-%m-%d-%H')}-{args.brewery.lower()}-{args.beer.lower()}.md"
-    filepath = os.path.join(content__dir, filename)
-    with open(filepath, "w") as f:
-        f.write(f"""---
-beer_name: {args.beer}
-beer_style:
-brewery_name: {args.brewery}
-created_at: {str(timestamp)}
-beer_score:
-serving_style:
-image:
----
-
-""")
-    # TODO: Open file after creating boilerplate.
+    checkin = Checkin(**kwargs)
+    checkin.add_checkin()
 
 
 def handle_checkin_process(args):
@@ -43,10 +27,9 @@ def handle_checkin_process(args):
         kwargs['prefix'] = args.prefix
     if args.base_url is not None:
         kwargs['base_url'] = args.base_url
-    
+
     bl = BeerLog(**kwargs)
     bl.process_checkins()
-
 
 
 def entry():
@@ -81,25 +64,21 @@ def entry():
     )
     checkin_process_parser.set_defaults(func=handle_checkin_process)
 
+    # Action: add
+    checkin_add_parser = checkin_action_parser.add_parser("add")
+    checkin_add_parser.add_argument(
+        "--brewery",
+        help="Name of the brewery."
+    )
+    checkin_add_parser.add_argument(
+        "--beer",
+        help="Name of the beer."
+    )
+    checkin_add_parser.add_argument(
+        "--content_dir",
+        help="Location of content to replace the default ./content/beer"
+    )
+    checkin_add_parser.set_defaults(func=handle_checkin_add)
+
     args = parser.parse_args()
     args.func(args)
-
-    # TODO: Add a "checkin add" action to create new checkins.
-    # checkin_parser = subparser.add_parser("checkin")
-    # checkin_parser.add_argument(
-    #     "brewery",
-    #     help="Name of the brewery that made the beer."
-    # )
-    # checkin_parser.add_argument(
-    #     "beer",
-    #     help="Name of the beer."
-    # )
-    # checkin_parser.add_argument(
-    #     "--content_dir",
-    #     help="Location of content to replace the default ./content/beer"
-    # )
-    # checkin_parser.add_argument(
-    #     "--timestamp",
-    #     help=""
-    # )
-    # checkin_parser.set_defaults(func=handle_checkin)

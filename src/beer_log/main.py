@@ -55,7 +55,7 @@ class Checkin():
 beer_name: {self.beer_name}
 beer_style:
 brewery_name: {self.brewery_name}
-created_at: {str(timestamp)}
+created_at: {str(timestamp.strftime('%Y-%m-%d %H:%M:%S'))}
 beer_score:
 serving_style:
 image:

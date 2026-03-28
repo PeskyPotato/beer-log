@@ -8,11 +8,23 @@ def handle_checkin_add(args):
         kwargs['brewery_name'] = args.brewery
     if args.beer is not None:
         kwargs['beer_name'] = args.beer
+    if args.beer_style is not None:
+        kwargs['beer_style'] = args.beer_style
+    if args.score is not None:
+        kwargs['beer_score'] = args.score
+    if args.serving_style is not None:
+        kwargs['serving_style'] = args.serving_style
+    if args.description is not None:
+        kwargs['description'] = args.description
+    if args.timestamp is not None:
+        kwargs['timestamp'] = args.timestamp
+    if args.image_url is not None:
+        kwargs['image'] = args.image_url
     if args.content_dir is not None:
         kwargs['content_dir'] = args.content_dir
 
     checkin = Checkin(**kwargs)
-    checkin.add_checkin()
+    checkin._cli_add_checkin()
 
 
 def handle_checkin_process(args):
@@ -73,6 +85,43 @@ def entry():
     checkin_add_parser.add_argument(
         "--beer",
         help="Name of the beer."
+    )
+    checkin_add_parser.add_argument(
+        "--beer_style",
+        help="Style of beer.",
+        type=str,
+        required=False
+    )
+    checkin_add_parser.add_argument(
+        "--score",
+        help="Rate the beer from 0 to 5.",
+        type=float,
+        required=False
+    )
+    checkin_add_parser.add_argument(
+        "--serving_style",
+        help="Serving style of the beer.",
+        choices=["can", "bottle", "draft", "taster"],
+        type=str,
+        required=False
+    )
+    checkin_add_parser.add_argument(
+        "--description",
+        help="Any notes about the beer.",
+        type=str,
+        required=False
+    )
+    checkin_add_parser.add_argument(
+        "--timestamp",
+        help="Date and time when the beer was drunk in the following format 2026-03-28T13:56:00.00",
+        type=str,
+        required=False
+    )
+    checkin_add_parser.add_argument(
+        "--image_url",
+        help="URL of the beer image.",
+        type=str,
+        required=False
     )
     checkin_add_parser.add_argument(
         "--content_dir",

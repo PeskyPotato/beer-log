@@ -35,10 +35,22 @@ class Checkin():
             self,
             beer_name,
             brewery_name,
-            content_dir,
+            beer_style="",
+            beer_score=0.0,
+            serving_style="",
+            description="",
+            timestamp=datetime.now(),
+            image="",
+            content_dir="./content/beer",
             ):
         self.brewery_name = brewery_name
         self.beer_name = beer_name
+        self.beer_style = beer_style
+        self.beer_score = beer_score
+        self.serving_style = serving_style
+        self.description = description
+        self.timestamp = timestamp
+        self.image = image
         self.content_dir = content_dir
 
         if not os.path.exists(content_dir):
@@ -47,29 +59,35 @@ class Checkin():
 
     def add_checkin(self):
         print(self.beer_name, self.brewery_name)
-        timestamp = datetime.now()
-        filename = f"{timestamp.strftime('%Y-%m-%d-%H')}-{clean_filenames(self.brewery_name)}-{clean_filenames(self.beer_name)}.md"
+        filename = f"{self.timestamp.strftime('%Y-%m-%d-%H')}-{clean_filenames(self.brewery_name)}-{clean_filenames(self.beer_name)}.md"
         filepath = os.path.join(self.content_dir, filename)
         with open(filepath, "w") as f:
             f.write(f"""---
 beer_name: {self.beer_name}
-beer_style:
+beer_style: {self.beer_style}
 brewery_name: {self.brewery_name}
-created_at: {str(timestamp.strftime('%Y-%m-%d %H:%M:%S'))}
-beer_score:
-serving_style:
-image:
+created_at: {str(self.timestamp.strftime('%Y-%m-%d %H:%M:%S'))}
+beer_score: {self.beer_score}
+serving_style: {self.serving_style}
+image: {self.image}
 ---
-
+{self.description}
 """)
-        filepath = os.path.abspath(filepath)
-        from shlex import quote
-        if os.sys.platform == "win32":
-            os.system(f"notepad.exe '{filepath}'")
-        else:
-            os.system(
-                f"{os.getenv('EDITOR', 'vi')} {quote(filepath)}"
-            )
+        return filepath
+
+    def _cli_add_checkin(self, open_file=True):
+        # Calls add_checkin and opens file if open_file is
+        # true. Used by the beer_log CLI.
+        filepath = self.add_checkin()
+        if open_file:
+            filepath = os.path.abspath(filepath)
+            from shlex import quote
+            if os.sys.platform == "win32":
+                os.system(f"notepad.exe '{filepath}'")
+            else:
+                os.system(
+                    f"{os.getenv('EDITOR', 'vi')} {quote(filepath)}"
+                )
 
 
 class BeerLog():

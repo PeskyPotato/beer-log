@@ -16,8 +16,6 @@ import rss_py
 
 # TODO: Allow users to enable/disable RSS generation.
 
-# TODO: Docs. Update README to include checkin add.
-
 root = os.path.dirname(os.path.abspath(__file__))
 template_environment = None
 

@@ -11,20 +11,7 @@ from .utils import (
 from beer_log.beer import Database
 import rss_py
 
-# TODO: Cleanup global variables and include in the BeerLog class.
-# db, root, and template_enviornment can all be created within BeerLog.
-
 # TODO: Allow users to enable/disable RSS generation.
-
-root = os.path.dirname(os.path.abspath(__file__))
-template_environment = None
-
-db = Database(os.path.join(os.getcwd(), "beer.db"))
-
-text_maker = html2text.HTML2Text()
-text_maker.ignore_links = True
-text_maker.bypass_tables = True
-text_maker.ignore_images = True
 
 
 class Checkin():
@@ -93,11 +80,20 @@ class BeerLog():
     def __init__(
             self,
             content_dir="content/beer",
-            templates_dir=os.path.join(root, "templates"),
+            templates_dir=os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "templates"),
             output_dir=os.path.join(os.getcwd(), "beer"),
             prefix=None,
             base_url=None,
             ):
+        self.db = Database(os.path.join(os.getcwd(), "beer.db"))
+
+        text_maker = html2text.HTML2Text()
+        text_maker.ignore_links = True
+        text_maker.bypass_tables = True
+        text_maker.ignore_images = True
+
 
         self.output_dir = clean_path(output_dir)
 
@@ -131,16 +127,16 @@ class BeerLog():
                     print(f"Skipping {filename} due to missing data.")
                     continue
 
-                brewery_id = db.create_brewery_if_not_exists(
+                brewery_id = self.db.create_brewery_if_not_exists(
                     checkin_data["brewery_name"]
                 )
 
-                beer_id = db.create_beer_if_not_exists(
+                beer_id = self.db.create_beer_if_not_exists(
                     checkin_data["beer_name"],
                     brewery_id
                 )
 
-                db.create_checkin(
+                self.db.create_checkin(
                     checkin_id, beer_id,
                     checkin_data['rating_score'],
                     checkin_data['timestamp'],
@@ -170,12 +166,12 @@ class BeerLog():
 
     def render_breweries(self):
         # /beer/<brewery/ shows all beers checked-in from a brewery
-        breweries = db.get_breweries()
+        breweries = self.db.get_breweries()
         for brewery_row in breweries:
             brewery_dict = dict(brewery_row)
             brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
 
-            brewery_beers = db.get_beers_for_brewery(brewery_dict['id'])
+            brewery_beers = self.db.get_beers_for_brewery(brewery_dict['id'])
 
             brewery_beers_with_slugs = []
             for beer_row in brewery_beers:
@@ -193,14 +189,14 @@ class BeerLog():
 
     def render_beers(self):
         # /beer/<brewery>/<beer>/ shows all checkins for a beer
-        beers = db.get_beers()
+        beers = self.db.get_beers()
         for beer_row in beers:
             beer_dict = dict(beer_row)
-            brewery = db.get_brewery(beer_dict['brewery_id'])
+            brewery = self.db.get_brewery(beer_dict['brewery_id'])
             brewery_dict = dict(brewery)
             brewery_dict['slug'] = re.sub(r'\W+', '-', brewery_dict['name']).strip('-').lower()
 
-            beer_checkins = db.get_checkins_for_beer(beer_dict['id'])
+            beer_checkins = self.db.get_checkins_for_beer(beer_dict['id'])
 
             beer_dict['slug'] = re.sub(r'\W+', '-', beer_dict['name']).strip('-').lower()
 
@@ -222,7 +218,7 @@ class BeerLog():
             )
 
     def render_checkins(self):
-        checkins = db.get_checkins()
+        checkins = self.db.get_checkins()
         print(self.output_dir)
         # /beer/ page with all check-ins
         checkins_with_slugs = []

@@ -15,23 +15,23 @@ def clean_path(path):
 
 
 def parse_checkin_file(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-        md = markdown.Markdown(extensions=['meta'])
+        md = markdown.Markdown(extensions=["meta"])
         html = md.convert(content)
         meta = md.Meta
 
         # TODO: Can we simplify the arrays here?
-        beer_score = meta.get('beer_score', -1)
-        if meta.get('beer_score') == '':
+        beer_score = meta.get("beer_score", -1)
+        if meta.get("beer_score") == "":
             beer_score = [-1]
         checkin_data = {
-            'timestamp': meta.get('created_at', [None])[0],
-            'rating_score': beer_score[0],
-            'beer_name': meta.get('beer_name', [None])[0],
-            'brewery_name': meta.get('brewery_name', [None])[0],
-            'description': html,
-            'image': meta.get('image', [None])[0]
+            "timestamp": meta.get("created_at", [None])[0],
+            "rating_score": beer_score[0],
+            "beer_name": meta.get("beer_name", [None])[0],
+            "brewery_name": meta.get("brewery_name", [None])[0],
+            "description": html,
+            "image": meta.get("image", [None])[0],
         }
         return checkin_data
 
@@ -49,4 +49,4 @@ def clean_filenames(value):
     # Used to escape some characters in filenames
     # Converts string to lowercase, replaces spaces with
     # a hyphen.
-    return value.lower().replace(' ', '-')
+    return value.lower().replace(" ", "-")

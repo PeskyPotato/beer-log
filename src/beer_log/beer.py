@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+
 class Database:
     def __init__(self, db_path="beer.db"):
         self.create_database(db_path)
@@ -14,14 +15,14 @@ class Database:
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
 
-        c.execute('''
+        c.execute("""
             CREATE TABLE breweries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE
             )
-        ''')
+        """)
 
-        c.execute('''
+        c.execute("""
             CREATE TABLE beers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
@@ -29,9 +30,9 @@ class Database:
                 FOREIGN KEY (brewery_id) REFERENCES breweries (id),
                 UNIQUE (name, brewery_id)
             )
-        ''')
+        """)
 
-        c.execute('''
+        c.execute("""
             CREATE TABLE checkins (
                 id TEXT PRIMARY KEY,
                 beer_id INTEGER,
@@ -41,55 +42,65 @@ class Database:
                 image TEXT,
                 FOREIGN KEY (beer_id) REFERENCES beers (id)
             )
-        ''')
+        """)
 
         conn.commit()
         conn.close()
 
     def create_brewery_if_not_exists(self, brewery_name):
         cursor = self.conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id
             FROM breweries
             WHERE name = ?""",
-            (brewery_name,))
+            (brewery_name,),
+        )
         brewery = cursor.fetchone()
         if brewery:
             return brewery[0]
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO breweries (name)
                 VALUES (?)""",
-                (brewery_name,))
+                (brewery_name,),
+            )
             self.conn.commit()
             return cursor.lastrowid
 
     def create_beer_if_not_exists(self, beer_name, brewery_id):
         cursor = self.conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id FROM beers
             WHERE name = ? AND brewery_id = ?""",
-            (beer_name, brewery_id))
+            (beer_name, brewery_id),
+        )
         beer = cursor.fetchone()
         if beer:
             return beer[0]
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO beers (name, brewery_id)
                 VALUES (?, ?)""",
-                (beer_name, brewery_id))
+                (beer_name, brewery_id),
+            )
             self.conn.commit()
             return cursor.lastrowid
-    
+
     def create_checkin(
-        self, checkin_id, beer_id, rating_score, timestamp,
-        description, image
+        self, checkin_id, beer_id, rating_score, timestamp, description, image
     ):
         cursor = self.conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
                 INSERT INTO checkins (id, beer_id, rating_score, timestamp, description, image)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (checkin_id, beer_id, rating_score, timestamp, description, image))
+            """,
+            (checkin_id, beer_id, rating_score, timestamp, description, image),
+        )
         self.conn.commit()
         return True
 
@@ -110,7 +121,7 @@ class Database:
             ORDER BY c.timestamp DESC
         """)
         return c.fetchall()
-    
+
     def get_beers(self):
         c = self.conn.cursor()
         c.execute("SELECT * FROM beers")
@@ -128,7 +139,8 @@ class Database:
 
     def get_checkins_for_beer(self, beer_id):
         c = self.conn.cursor()
-        c.execute("""
+        c.execute(
+            """
             SELECT
                 c.id as checkin_id,
                 c.rating_score,
@@ -142,16 +154,21 @@ class Database:
             JOIN breweries br ON b.brewery_id = br.id
             WHERE c.beer_id = ?
             ORDER BY c.timestamp DESC
-        """, (beer_id,))
+        """,
+            (beer_id,),
+        )
         return c.fetchall()
 
     def get_beers_for_brewery(self, brewery_id):
         c = self.conn.cursor()
-        c.execute("""
+        c.execute(
+            """
             SELECT b.name, b.id
             FROM beers b
             WHERE b.brewery_id = ?
-        """, (brewery_id,))
+        """,
+            (brewery_id,),
+        )
         return c.fetchall()
 
     def close(self):

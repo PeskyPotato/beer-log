@@ -145,7 +145,7 @@ class BeerLog:
     def render_pages(
         self, template_page, folder_name, page_name="index.html", **kwargs
     ):
-        # TODO: Better default pages.
+        # TODO(#5): Better default pages.
         # Default pages are currently just stripped from my custom template
         # without CSS. Create better defaults that work with HTML elements
         # and none or minimal styles.

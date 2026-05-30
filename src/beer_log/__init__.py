@@ -1,5 +1,6 @@
 import argparse
 from .main import BeerLog, Checkin
+from datetime import datetime
 
 
 def handle_checkin_add(args):
@@ -17,7 +18,7 @@ def handle_checkin_add(args):
     if args.description is not None:
         kwargs["description"] = args.description
     if args.timestamp is not None:
-        kwargs["timestamp"] = args.timestamp
+        kwargs["timestamp"] = datetime.strptime(args.timestamp, "%Y-%m-%dT%H:%M:%S.%f")
     if args.image_url is not None:
         kwargs["image"] = args.image_url
     if args.content_dir is not None:

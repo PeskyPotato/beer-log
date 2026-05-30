@@ -8,7 +8,7 @@ from .utils import clean_path, parse_checkin_file, to_datetime, clean_filenames
 from beer_log.beer import Database
 import rss_py
 
-# TODO: Allow users to enable/disable RSS generation.
+# TODO(#4): Allow users to enable/disable RSS generation.
 
 
 class Checkin:
